@@ -12,11 +12,14 @@ class ZomatoApi
 	var $apiKey 	= '7749b19667964b87a3efc739e254ada2';
 	var $baseUrl 	= 'https://api.zomato.com/v1/';
 	var $error 		= '';
-	function __construct($apiKey = '', $base_url = '')
+	var $returnFormat = 'json';
+	function __construct($apiKey = '', $base_url = '', $returnFormat = 'json')
 	{
 		if(!empty($apiKey))		{ $this->apiKey = $apiKey; 		} //Assign the api key if api key not  empty 
 		if(!empty($baseUrl))	{ $this->baseUrl = $baseUrl; 	} //Assign the api url if base URL not  empty
+		if(!empty($returnFormat))	{ $this->returnFormat = $returnFormat; 	} //Assign the return format
 		$this->error = new stdClass; 
+		
 	}
 	public function __call($method, $args)
 	{      
@@ -636,15 +639,32 @@ class ZomatoApi
 	**/
 	private function responseAnalyse($output)
 	{
-		$arrData = json_decode($output);
-		if(isset($arrData->status))
+		
+		switch($this->returnFormat)
 		{
-			$this->error = $arrData;
-			return false;
-		}
-		else
-		{
-			return $arrData;
+			case 'json':			
+				$arrData = json_decode($output);
+				if(isset($arrData->status))
+				{
+					$this->error = $arrData;
+					return false;
+				}
+				else
+				{
+					return $arrData;
+				}
+			break;
+			case 'xml':
+			$arrData = simplexml_load_string($output);			
+			if(isset($arrData->status))
+			{
+				$this->error = $arrData;
+				return false;
+			}
+			else
+			{
+				return $arrData;
+			}
 		}
 	}
 	/**
@@ -677,7 +697,7 @@ class ZomatoApi
 	**/
 	function getAllCity()
 	{		
-		$url =  $this->baseUrl . 'cities.json';
+		$url =  $this->baseUrl . 'cities.'.$returnFormat;
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);
 
@@ -694,7 +714,7 @@ class ZomatoApi
 		
 		if(!$this->validationFields('lat', $lat, true) || !$this->validationFields('lon', $lon, true)){	return false; }	
 		$where = $this->where(array('lat'=>$lat, 'lon'=> $lon));
-		$url =  $this->baseUrl . 'geocode.json'. $where;
+		$url =  $this->baseUrl . 'geocode.'.$this->returnFormat . $where;
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);		
 	}
@@ -708,7 +728,7 @@ class ZomatoApi
 	{		
 		if(!$this->validationFields('city id', $cityId, true))	{ return false;	}
 		$where = $this->where(array('city_id'=>$cityId));
-		$url =  $this->baseUrl . 'zones.json'.$where;		
+		$url =  $this->baseUrl . 'zones.'.$this->returnFormat.$where;		
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);		
 	}
@@ -722,7 +742,7 @@ class ZomatoApi
 	{
 		if(!$this->validationFields('city id', $cityId, true))	{	return false;	}
 		$where = $this->where(array('city_id'=>$cityId));
-		$url =  $this->baseUrl . 'subzones.json'.$where;	
+		$url =  $this->baseUrl . 'subzones.'.$this->returnFormat.$where;	
 		$retResult = $this->getRequest($url);	
 		return $this->responseAnalyse($retResult);		
 	}
@@ -736,7 +756,7 @@ class ZomatoApi
 	{		
 		if(!$this->validationFields('zone id', $zoneId, true)){ return false;	}
 		$where = $this->where(array('zone_id'=>$zoneId));
-		$url =  $this->baseUrl . 'subzones.json'.$where;
+		$url =  $this->baseUrl . 'subzones.'.$this->returnFormat.$where;
 		$retResult = $this->getRequest($url);	
 		return $this->responseAnalyse($retResult);	
 	}
@@ -750,7 +770,7 @@ class ZomatoApi
 	{		
 		if(!$this->validationFields('city id', $cityId, true)){ return false;	}
 		$where = $this->where(array('city_id'=>$cityId));
-		$url =  $this->baseUrl . 'cuisines.json'. $where;
+		$url =  $this->baseUrl . 'cuisines.'.$this->returnFormat. $where;
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);
 	}
@@ -773,7 +793,7 @@ class ZomatoApi
 		if(!$this->validationFields('start', $start, false)){ return false;	}
 		if(!$this->validationFields('count', $count, false)){ return false;	}
 		$where = $this->where(array('zone_id'=>$zoneId, 'category'=> $category, 'start'=> $start, 'count'=> $count));
-		$url =  $this->baseUrl . 'cuisines.json?search.json'.$where;
+		$url =  $this->baseUrl . 'search.json'.$this->returnFormat.$where;
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);	
 	}
@@ -797,7 +817,7 @@ class ZomatoApi
 		if(!$this->validationFields('start', $start, false)){ return false;	}
 		if(!$this->validationFields('count', $count, false)){ return false;	}
 		$where = $this->where(array('city_id'=>$cityId, 'subzone_id'=> $subzoneId ,'category'=> $category, 'start'=> $start, 'count'=> $count));		
-		$url =  $this->baseUrl . 'search.json'. $where;
+		$url =  $this->baseUrl . 'search.'.$this->returnFormat. $where;
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);	
 	}
@@ -810,7 +830,7 @@ class ZomatoApi
 	function getRestaurantDetails($restaurantId = '')
 	{
 		if(!$this->validationFields('restaurant id', $restaurantId, true)){  return false;	}			
-		$url =  $this->baseUrl . 'restaurant.json/'.$restaurantId;
+		$url =  $this->baseUrl . 'restaurant.'.$this->returnFormat.'/'.$restaurantId;
 		$retResult = $this->getRequest($url);
 		//echo '$url'.$url;
 		return $this->responseAnalyse($retResult);			
@@ -830,7 +850,7 @@ class ZomatoApi
 		if(!$this->validationFields('start', $start, false)){ return false;	}
 		if(!$this->validationFields('count', $count, false)){ return false;	}
 		$where = $this->where(array('start'=>$start, 'count'=> $count));		
-		$url =  $this->baseUrl . 'reviews.json/'.$restaurantId.'/user'. $where;
+		$url =  $this->baseUrl . 'reviews./'.$this->returnFormat.$restaurantId.'/user'. $where;
 		
 		$retResult = $this->getRequest($url);	
 		return $this->responseAnalyse($retResult);			
@@ -851,7 +871,7 @@ class ZomatoApi
 		if(!$this->validationFields('name', $name, false)){ return false;	} 
 		
 		$data = $this->where(array('res_id'=> $res_id, 'data'=> $data, 'name' => $name));		
-		$url =  $this->baseUrl . 'contact.json';		
+		$url =  $this->baseUrl . 'contact.'.$this->returnFormat;		
 		$retResult = $this->postRequest($url, $data);	
 		return $this->responseAnalyse($retResult);	
 	
@@ -901,7 +921,7 @@ class ZomatoApi
 		if(!$this->validationFields('start', $start, false)){ return false;	}
 		if(!$this->validationFields('count', $count, false)){ return false;	}
 		$where = $this->where(array('city_id' => $cityId, 'cuisine_id' => $cuisineId, 'category' => $category, 'start' => $start, 'limit' => $limit, 'mincft' => $mincft,  'maxcft' =>$maxcft, 'minrating' => $minrating,  'maxrating' => $maxrating, 'cc' => $cc, 'bar' => $bar, 'veg' => $veg, 'open'  => $open, 'buffet' => $buffet, 'happyhour' => $happyhour));
-		$url =  $this->baseUrl . 'search.json'.$where;
+		$url =  $this->baseUrl . 'search.'.$this->returnFormat.$where;
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);				
 	}
@@ -955,7 +975,7 @@ class ZomatoApi
 			
 		$where = $this->where(array('random'=>true,'city_id' => $cityId, 'cuisine_id' => $cuisineId, 'category' => $category, 'start' => $start, 'limit' => $limit, 'mincft' => $mincft,  'maxcft' => $maxcft, 'minrating' => $minrating,  'maxrating' => $maxrating, 'cc' => $cc, 'bar' => $bar, 'veg' => $veg, 'open'  => $open, 'buffet' => $buffet, 'happyhour' => $happyhour));
 		
-		$url =  $this->baseUrl . 'search.json/near'.$where; 
+		$url =  $this->baseUrl . 'search./'.$this->returnFormat.'near'.$where; 
 		$retResult = $this->getRequest($url);	
 		return $this->responseAnalyse($retResult);		
 	}
@@ -1007,7 +1027,7 @@ class ZomatoApi
 
 		$where = $this->where(array('random'=>true,'city_id' => $cityId, 'cuisine_id' => $cuisineId, 'category' => $category, 'start' => $start, 'limit' => $limit, 'mincft' => $mincft,  'maxcft' => $maxcft, 'minrating' => $minrating,  'maxrating' => $maxrating, 'cc' => $cc, 'bar' => $bar, 'veg' => $veg, 'open'  => $open, 'buffet' => $buffet, 'happyhour' => $happyhour));
 
-		$url =  $this->baseUrl . 'search.json'. $where; 
+		$url =  $this->baseUrl . 'search.'.$this->returnFormat. $where; 
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);	
 	}
@@ -1040,7 +1060,7 @@ class ZomatoApi
 		
 		
 		$where = $this->where(array('lat' => $lat, 'lon' => $lon, 'start' => $start, 'count' => $count, 'mincft' => $mincft, 'maxcft' => $maxcft, 'minrating' => $minrating, 'maxrating' => $maxrating));
-		$url =  $this->baseUrl . 'search.json/near'.$where; 
+		$url =  $this->baseUrl . 'search.'.$this->returnFormat.'/near'.$where; 
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);	
 	}
@@ -1048,7 +1068,7 @@ class ZomatoApi
 }
 
 
-$objZomatoApi = new ZomatoApi();
+$objZomatoApi = new ZomatoApi('7749b19667964b87a3efc739e254ada','','xml');
 $data = $objZomatoApi->getRestaurantDetails(2);
 if($data)
 {

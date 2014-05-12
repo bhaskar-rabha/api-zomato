@@ -72,7 +72,7 @@ class ZomatoApi
 				}
 				else
 				{
-					if(!preg_match('/^|[1-9 ]+[0-9]*$/', $val))
+					if(!empty($val) && !preg_match('/^|[1-9 ]+[0-9]*$/', $val))
 					{
 						$this->_error->details ='Invalid City Id';
 						return false;	
@@ -108,12 +108,12 @@ class ZomatoApi
 				{
 					if(empty($val))
 					{
-						$this->_error->details ='Latitude is empty';
+						$this->_error->details ='Longitude is empty';
 						return false;	
 					}
 					else if(!preg_match('/^[0-9\.]+$/', $val))
 					{
-						$this->_error->details ='Invalid Latitude';
+						$this->_error->details ='Invalid Longitude';
 						return false;
 					}
 				}
@@ -149,6 +149,30 @@ class ZomatoApi
 					}
 				}
 			break;
+			case 'subzone id':
+				if($required)
+				{
+					if(empty($val))
+					{
+						$this->_error->details ='Subzone Id is empty';
+						return false;	
+					}
+					else if(!preg_match('/^[1-9]+[0-9]*$/', $val))
+					{
+						$this->_error->details ='Invalid Subzone';
+						return false;	
+					}
+				}
+				else
+				{
+					if(!preg_match('/^|[1-9 ]+[0-9]*$/', $val))
+					{
+						$this->_error->details ='Invalid Subzone';
+						return false;	
+					}
+				}
+			break;	
+
 			case 'category':
 				if($required)
 				{
@@ -165,8 +189,8 @@ class ZomatoApi
 										
 				}
 				else
-				{
-					if(!preg_match('/^[1-3 ]+$/', $val))
+				{					
+					if($val  !=="" &&  !preg_match('/^[1-3 ]+$/', $val))
 					{
 						$this->_error->details ='Invalid Category';
 						return false;	
@@ -175,6 +199,7 @@ class ZomatoApi
 				}
 			break;
 			case 'start':
+
 				if($required)
 				{
 					if(empty($val))
@@ -198,6 +223,7 @@ class ZomatoApi
 				}
 			break;
 			case 'count':
+
 				if($required)
 				{
 					if(empty($val))
@@ -205,15 +231,15 @@ class ZomatoApi
 						$this->_error->details ='Count is empty';
 						return false;	
 					}
-					else if(!preg_match('/^[1-9]+$/', $val)) 
+					else if(!preg_match('/^[1-9]+[0-9]*$/', $val)) 
 					{
 						$this->_error->details ='Invalid Count';
 						return false;
 					}
 				}
 				else
-				{
-					if(!preg_match('/^[1-9 ]+$/', $val)) 
+				{					
+					if(!preg_match('/^[1-9 ]+[0-9]*$/', $val)) 
 					{
 						$this->_error->details ='Invalid Count';
 						return false;
@@ -269,7 +295,7 @@ class ZomatoApi
 				}
 				else
 				{
-					if(!preg_match('/^[a-z 0-9]+$/', $val))
+					if($val !=='' && !preg_match('/^[a-z 0-9]+$/', $val))
 					{
 						$this->_error->details ='Invalid Name';
 						return false;	
@@ -574,7 +600,7 @@ class ZomatoApi
 				}
 				else
 				{
-					$query = '&'.$key .'='. $value;	
+					$query .= '&'.$key .'='. $value;	
 				}
 			}
 		}
@@ -609,11 +635,11 @@ class ZomatoApi
 	*			data	Post Data					Array String	required
 	*  	@return [type]         [description]
 	**/
-	private function postRequest($url, $data)
+	private function postRequest($url, $data = array())
 	{
 		$fields_string = "";
 		foreach($data as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
-		rtrim($fields_string, '&');
+		rtrim($fields_string, '&');		
 		
 		$ch = curl_init($url);
 		$timeout = 5; // set to zero for no timeout
@@ -624,8 +650,8 @@ class ZomatoApi
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); 
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $customHeader);
-		curl_setopt($ch,CURLOPT_POST, count($data));
-		curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
+		curl_setopt($ch, CURLOPT_POST, count($data));
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $fields_string);
 		$result = curl_exec($ch);		
 		curl_close($ch);
 		return $result;
@@ -654,7 +680,7 @@ class ZomatoApi
 					return $arrData;
 				}
 			break;
-			case 'xml':
+			case 'xml':			
 			$arrData = simplexml_load_string($output);			
 			if(isset($arrData->status))
 			{
@@ -697,7 +723,7 @@ class ZomatoApi
 	**/
 	function getAllCity()
 	{		
-		$url =  $this->_baseUrl . 'cities.'.$returnFormat;
+		$url =  $this->_baseUrl . 'cities.'.$this->_returnFormat;
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);
 
@@ -714,7 +740,7 @@ class ZomatoApi
 		
 		if(!$this->validationFields('lat', $lat, true) || !$this->validationFields('lon', $lon, true)){	return false; }	
 		$where = $this->where(array('lat'=>$lat, 'lon'=> $lon));
-		$url =  $this->_baseUrl . 'geocode.'.$this->_returnFormat . $where;
+		$url =  $this->_baseUrl . 'geocode.'.$this->_returnFormat . $where;		
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);		
 	}
@@ -734,8 +760,8 @@ class ZomatoApi
 	}
 	/**
 	*	[getLocalitiesInCity description]
-	* 	@param 	name 	summary 	type 	required
-	*  	        city_id	id		int		Required
+	* 	@param 	name 			summary 	type 	required
+	*  	        city_id			city id		int		Required
 	*  	@return [type]         [description]
 	**/
 	function getLocalitiesInCity($cityId = '')
@@ -777,6 +803,7 @@ class ZomatoApi
 	/**
 	* [getRestaurantsInZone description]
 	* @param  	name		summary													type    required
+				* city_id	city id													int		Required
 				* zone_id	Zone id													int		Required
 				* category	1 for Delivery, 2 for Dineout, 3 for Nightlife. 		int		Optional
 				* 			Skip this to get all results	
@@ -786,14 +813,15 @@ class ZomatoApi
 				* 			max is 50.	
 	* @return [type]             [description]
 	*/	
-	function getRestaurantsInZone($zoneId = '', $category = '', $start = 0, $count = 10)
+	function getRestaurantsInZone($cityId = '', $zoneId = '', $category = '', $start = 0, $count = 10)
 	{		
-		if(!$this->validationFields('zone id', $cityId, true)){ return false;	}		
-		if(!$this->validationFields('category', $cityId, true)){ return false;	}
+		if(!$this->validationFields('city id', $cityId, true)){ return false;	}	
+		if(!$this->validationFields('zone id', $zoneId, true)){ return false;	}		
+		if(!$this->validationFields('category', $category, false)){ return false;	}
 		if(!$this->validationFields('start', $start, false)){ return false;	}
 		if(!$this->validationFields('count', $count, false)){ return false;	}
-		$where = $this->where(array('zone_id'=>$zoneId, 'category'=> $category, 'start'=> $start, 'count'=> $count));
-		$url =  $this->_baseUrl . 'search.json'.$this->_returnFormat.$where;
+		$where = $this->where(array('city_id'=> $cityId,'zone_id'=>$zoneId, 'category'=> $category, 'start'=> $start, 'count'=> $count));
+		$url =  $this->_baseUrl . 'search.'.$this->_returnFormat.$where;
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);	
 	}
@@ -850,7 +878,7 @@ class ZomatoApi
 		if(!$this->validationFields('start', $start, false)){ return false;	}
 		if(!$this->validationFields('count', $count, false)){ return false;	}
 		$where = $this->where(array('start'=>$start, 'count'=> $count));		
-		$url =  $this->_baseUrl . 'reviews./'.$this->_returnFormat.$restaurantId.'/user'. $where;
+		$url =  $this->_baseUrl . 'reviews.'.$this->_returnFormat.'/'.$restaurantId.'/user'. $where;
 		
 		$retResult = $this->getRequest($url);	
 		return $this->responseAnalyse($retResult);			
@@ -864,15 +892,14 @@ class ZomatoApi
 	*		name		User name					string	Optional
 	* @return [type]                [description]
 	**/
-	function postErrorInRestaurantDetails($res_id = '', $start = '', $count = '')
+	function postErrorInRestaurantDetails($res_id = '', $changeData = '', $name = '')
 	{
 		if(!$this->validationFields('restaurant id', $res_id, true)){ return false;	}
-		if(!$this->validationFields('data', $data, true)){ return false;	}
-		if(!$this->validationFields('name', $name, false)){ return false;	} 
-		
-		$data = $this->where(array('res_id'=> $res_id, 'data'=> $data, 'name' => $name));		
+		if(!$this->validationFields('data', $changeData, true)){ return false;	}
+		if(!$this->validationFields('name', $name, false)){ return false;	} 		
+			
 		$url =  $this->_baseUrl . 'contact.'.$this->_returnFormat;		
-		$retResult = $this->postRequest($url, $data);	
+		$retResult = $this->postRequest($url, array('res_id'=> $res_id, 'data'=> $changeData, 'name' => $name));	
 		return $this->responseAnalyse($retResult);	
 	
 	}
@@ -1067,19 +1094,3 @@ class ZomatoApi
 
 }
 
-
-$objZomatoApi = new ZomatoApi('7749b19667964b87a3efc739e254ada2','','xml');
-$data = $objZomatoApi->getRestaurantDetails(2);
-if($data)
-{
-	echo '<pre>';
-	print_r($data);
-	echo '</pre>';
-}
-else
-{
-	$error = $objZomatoApi->getError();
-	echo '<pre>';
-	print_r($error);
-	echo '</pre>';
-}

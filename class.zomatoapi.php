@@ -356,7 +356,7 @@ class ZomatoApi
 						$this->_error->details ='Mincft is empty';
 						return false;	
 					}
-					else if(!preg_match('/^0|1+$/', $val)) 
+					else if(!preg_match('/^[0-9]+$/', $val)) 
 					{
 						$this->_error->details ='Invalid Mincft';
 						return false;
@@ -364,7 +364,7 @@ class ZomatoApi
 				}
 				else
 				{
-					if(!empty( $val) && !preg_match('/^[0-1]+$/', $val)) 
+					if(!empty($val) && !preg_match('/^[0-9]+$/', $val)) 
 					{
 						$this->_error->details ='Invalid Mincft';
 						return false;
@@ -379,7 +379,7 @@ class ZomatoApi
 						$this->_error->details ='Maxcft is empty';
 						return false;	
 					}
-					else if(!preg_match('/^0|1+$/', $val)) 
+					else if(!preg_match('/^[0-9]+$/', $val)) 
 					{
 						$this->_error->details ='Invalid Maxcft';
 						return false;
@@ -387,7 +387,7 @@ class ZomatoApi
 				}
 				else
 				{
-					if(!empty( $val) && !preg_match('/^[0-1]+$/', $val)) 
+					if(!empty( $val) && !preg_match('/^[0-9]+$/', $val)) 
 					{
 						$this->_error->details ='Invalid Maxcft';
 						return false;
@@ -402,7 +402,7 @@ class ZomatoApi
 						$this->_error->details ='Minrating is empty';
 						return false;	
 					}
-					else if(!preg_match('/^0|1+$/', $val)) 
+					else if(!preg_match('/^[0-9]+$/', $val)) 
 					{
 						$this->_error->details ='Invalid Minrating';
 						return false;
@@ -410,7 +410,7 @@ class ZomatoApi
 				}
 				else
 				{
-					if(!empty($val) && !preg_match('/^[0-1]+$/', $val)) 
+					if(!empty($val) && !preg_match('/^[0-9]+$/', $val)) 
 					{
 						$this->_error->details ='Invalid Minrating';
 						return false;
@@ -425,7 +425,7 @@ class ZomatoApi
 						$this->_error->details ='Maxrating is empty';
 						return false;	
 					}
-					else if(!preg_match('/^[0-1 ]+$/', $val)) 
+					else if(!preg_match('/^[0-9]+$/', $val)) 
 					{
 						$this->_error->details ='Invalid Maxrating';
 						return false;
@@ -433,7 +433,7 @@ class ZomatoApi
 				}
 				else
 				{
-					if(!empty($val) && !preg_match('/^0|1+$/', $val)) 
+					if(!empty($val) && !preg_match('/^[0-9]+$/', $val)) 
 					{
 						$this->_error->details ='Invalid Maxrating';
 						return false;
@@ -525,7 +525,7 @@ class ZomatoApi
 				}
 				else
 				{
-					if(!$this->verifyDate($val)) 
+					if(!empty($val) &&  !$this->verifyDate($val)) 
 					{
 						$this->_error->details ='Invalid Open';
 						return false;
@@ -970,7 +970,7 @@ class ZomatoApi
 		if(!$this->validationFields('happyhour', $happyhour, false)){ return false;	}
 		if(!$this->validationFields('start', $start, false)){ return false;	}
 		if(!$this->validationFields('count', $count, false)){ return false;	}
-		$where = $this->where(array('city_id' => $cityId, 'cuisine_id' => $cuisineId, 'category' => $category, 'start' => $start, 'limit' => $limit, 'mincft' => $mincft,  'maxcft' =>$maxcft, 'minrating' => $minrating,  'maxrating' => $maxrating, 'cc' => $cc, 'bar' => $bar, 'veg' => $veg, 'open'  => $open, 'buffet' => $buffet, 'happyhour' => $happyhour));
+		$where = $this->where(array('city_id' => $cityId, 'cuisine_id' => $cuisineId, 'category' => $category, 'start' => $start, 'count' => $count, 'mincft' => $mincft,  'maxcft' =>$maxcft, 'minrating' => $minrating,  'maxrating' => $maxrating, 'cc' => $cc, 'bar' => $bar, 'veg' => $veg, 'open'  => $open, 'buffet' => $buffet, 'happyhour' => $happyhour));
 		$url =  $this->_baseUrl . 'search.'.$this->_returnFormat.$where;
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);				

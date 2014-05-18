@@ -1,23 +1,58 @@
 <?php
 /**
-* PageName - class.zomatoapi.php
-* API Vesrion V1
-* Created Date - 09 May 2014.
-* Version 		Username        		Date                    	Change
-* 00000001		Bhaskar.Rabha 			09-05-2014					Created
+* Zomato API Class
+* API Documentation: http://www.zomato.com/api/documentation
+* Class Documentation: https://github.com/bhaskar-rabha/api-zomato/tree/dev/
+*
+* @author Bhaskar Rabha
+* @since 09 May 2014
+* @copyright Bhaskar Rabha - Lbi Technologies 2014-2015
+* @version 1
+* @license BSD http://www.opensource.org/licenses/bsd-license.php
 **/
 class ZomatoApi
 {
 	
-	private $_apiKey 	= '7749b19667964b87a3efc739e254ada2';
+	/**
+	* The Zomato API Key
+	*
+	*@var string
+	*/
+	private $_apikey 	= '7749b19667964b87a3efc739e254ada2';
+	
+	/**
+	* The API base URL
+	*/
 	private $_baseUrl 	= 'https://api.zomato.com/v1/';
+	
+	/**
+	* Store Error
+	*
+	*@var array
+	*/
 	private $_error 		= '';
-	private $_returnFormat = 'json';
-	function __construct($apiKey = '', $base_url = '', $returnFormat = 'json')
+	
+	/**
+	* Available Data Format
+	* @var string
+	*/
+	private $_apiDataFormat = array('json','xml');
+	
+	/**
+	* Data Format
+	* @var string
+	*/
+	private $_dataformat = '';
+	
+	/**
+	* Default constructor
+	* @param array|string $config          Zomato configuration data
+	* @return void
+	*/
+	function __construct($config)
 	{
-		if(!empty($apiKey))		{ $this->_apiKey = $apiKey; 		} //Assign the api key if api key not  empty 
-		if(!empty($baseUrl))	{ $this->_baseUrl = $baseUrl; 	} //Assign the api url if base URL not  empty
-		if(!empty($returnFormat))	{ $this->_returnFormat = $returnFormat; 	} //Assign the return format
+		if(!empty($config['apikey']))		{ $this->setApiKey($config['apikey']); } //Assign the api key if api key not  empty 		
+		if(!empty($config['dataformat']) && true === in_array($config['dataformat'], $this->_apiDataFormat))	{ $this->setDataFormat($config['dataformat']); 	} //Assign the return format
 		$this->_error = new stdClass; 
 		
 	}
@@ -38,7 +73,7 @@ class ZomatoApi
 	*	[verifyDate description]
 	* 	@param 	name 		summary 									type 			required
 	*	        date		date										datetime		Required				
-	*  	@return [type]         [description]
+	*  	@return boolean
 	**/
 	private function verifyDate($date)
 	{
@@ -50,7 +85,7 @@ class ZomatoApi
 	*	        field		Field Name									String			Required
 	*			val			Value of Field								String			Required
 	*			required	Empty check 0 - Not Required, 1 - Required	Boolean			Optional
-	*  	@return [type]         [description]
+	*  	@return boolean
 	**/
 	private function validationFields($field, $val, $required=false)
 	{
@@ -608,7 +643,7 @@ class ZomatoApi
 	*	[where description]
 	* 	@param 	name 		summary 							type 			required
 	*	        arrWhere	Prepare the Params for request		Array String	required				
-	*  	@return [type]         [description]
+	*  	@return string
 	**/
 	private function where($arrWhere = array())
 	{
@@ -633,14 +668,14 @@ class ZomatoApi
 	*	[getRequest description]
 	* 	@param 	name 	summary 							type 	required
 	*	        url		API Request URL	with params			String	required	*			
-	*  	@return [type]         [description]
+	*   @return xml/json      xml or json depend on the $this->_dataformat;
 	**/
 	private function getRequest($url)
 	{
 
 		$ch = curl_init($url);
 		$timeout = 5; // set to zero for no timeout
-		$customHeader = array('X-Zomato-API-Key:'.$this->_apiKey);
+		$customHeader = array('X-Zomato-API-Key:'.$this->getApiKey());
 		curl_setopt($ch, CURLOPT_URL, $url);		
 		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -656,7 +691,7 @@ class ZomatoApi
 	* 	@param 	name 	summary 					type 	required
 	*	        url		API Request URL				String	required
 	*			data	Post Data					Array String	required
-	*  	@return [type]         [description]
+	*   @return xml/json      xml or json depend on the $this->_dataformat;
 	**/
 	private function postRequest($url, $data = array())
 	{
@@ -666,7 +701,7 @@ class ZomatoApi
 		
 		$ch = curl_init($url);
 		$timeout = 5; // set to zero for no timeout
-		$customHeader = array('X-Zomato-API-Key:'.$this->_apiKey);
+		$customHeader = array('X-Zomato-API-Key:'.$this->getApiKey());
 		curl_setopt($ch, CURLOPT_URL, $url);		
 		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -684,13 +719,12 @@ class ZomatoApi
 	*	[responseAnalyse description]
 	* 	@param 	name 	summary 					type 	required
 	*	        content	JSON content return API 	String	required
-	*  	@return [type]         [description]
+	*  	@return array
 	**/
 	private function responseAnalyse($output)
 	{
-		
-		switch($this->_returnFormat)
-		{
+		switch($this->getDataFormat())
+		{ 
 			case 'json':			
 				$arrData = json_decode($output);
 				if(isset($arrData->status))
@@ -720,7 +754,7 @@ class ZomatoApi
 	*	[getError description]
 	* 	@param 	name 	method 	summary type 	required
 	*	        None	None	None	None	None
-	*  	@return [type]         [description]
+	*  	@return object
 	**/
 	function getError()
 	{
@@ -730,7 +764,7 @@ class ZomatoApi
 	*	[printError description]
 	* 	@param 	name 	method 	summary type 	required
 	*	        None	None	None	None	None
-	*  	@return [type]         [description]
+	*  	@return void
 	**/
 	function printError()
 	{
@@ -742,11 +776,11 @@ class ZomatoApi
 	*	[getAllCity description]
 	* 	@param 	name 	method 	summary type 	required
 	*	        None	None	None	None	None
-	*  	@return [type]         [description]
+	*  @return xml/json      xml or json depend on the $this->_dataformat;
 	**/
 	function getAllCity()
 	{		
-		$url =  $this->_baseUrl . 'cities.'.$this->_returnFormat;
+		$url =  $this->_baseUrl . 'cities.'. $this->getDataFormat();
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);
 
@@ -756,14 +790,14 @@ class ZomatoApi
 	* 	@param 	name 	method 	summary 			type 	required
 	*	        lat		GET		Device latitude		double	Required
 	*	        lon		GET		Device longitude	double	Required
-	*  	@return [type]         [description]
+	*   @return xml/json      xml or json depend on the $this->_dataformat;
 	**/
 	function getLocalityFromCoordinates($lat = '', $lon = '')
 	{
 		
 		if(!$this->validationFields('lat', $lat, true) || !$this->validationFields('lon', $lon, true)){	return false; }	
 		$where = $this->where(array('lat'=>$lat, 'lon'=> $lon));
-		$url =  $this->_baseUrl . 'geocode.'.$this->_returnFormat . $where;		
+		$url =  $this->_baseUrl . 'geocode.'.$this->getDataFormat() . $where;		
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);		
 	}
@@ -771,13 +805,13 @@ class ZomatoApi
 	*	[getZonesInCity description]
 	* 	@param 	name 	summary 	type 	required
 	*  	        cityId	City id		int		Required
-	*  	@return [type]         [description]
+	*   @return xml/json      xml or json depend on the $this->_dataformat;
 	**/
 	function getZonesInCity($cityId = '')
 	{		
 		if(!$this->validationFields('city id', $cityId, true))	{ return false;	}
 		$where = $this->where(array('city_id'=>$cityId));
-		$url =  $this->_baseUrl . 'zones.'.$this->_returnFormat.$where;		
+		$url =  $this->_baseUrl . 'zones.'.$this->getDataFormat().$where;		
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);		
 	}
@@ -785,13 +819,13 @@ class ZomatoApi
 	*	[getLocalitiesInCity description]
 	* 	@param 	name 			summary 	type 	required
 	*  	        city_id			city id		int		Required
-	*  	@return [type]         [description]
+	*   @return xml/json      xml or json depend on the $this->_dataformat;
 	**/
 	function getLocalitiesInCity($cityId = '')
 	{
 		if(!$this->validationFields('city id', $cityId, true))	{	return false;	}
 		$where = $this->where(array('city_id'=>$cityId));
-		$url =  $this->_baseUrl . 'subzones.'.$this->_returnFormat.$where;	
+		$url =  $this->_baseUrl . 'subzones.'.$this->getDataFormat().$where;	
 		$retResult = $this->getRequest($url);	
 		return $this->responseAnalyse($retResult);		
 	}
@@ -799,13 +833,13 @@ class ZomatoApi
 	*	[getLocalitiesZone description]
 	* 	@param name 	summary 	type 	required
 	*  	       zone_id	Zone id		int		Required
-	*  	@return [type]         [description]
+	*   @return xml/json      xml or json depend on the $this->_dataformat;
 	**/
 	function getLocalitiesZone($zoneId = '')
 	{		
 		if(!$this->validationFields('zone id', $zoneId, true)){ return false;	}
 		$where = $this->where(array('zone_id'=>$zoneId));
-		$url =  $this->_baseUrl . 'subzones.'.$this->_returnFormat.$where;
+		$url =  $this->_baseUrl . 'subzones.'.$this->getDataFormat().$where;
 		$retResult = $this->getRequest($url);	
 		return $this->responseAnalyse($retResult);	
 	}
@@ -813,28 +847,28 @@ class ZomatoApi
  	* [getCuisinesByCityId description]
 	* @param   name 		summary 								type 	required
 	*		   city_id		City id									int		Required
-	* @return [type]         [description]
+	* @return xml/json      xml or json depend on the $this->_dataformat;
 	*/
 	function getCuisinesByCityId($cityId = '')
 	{		
 		if(!$this->validationFields('city id', $cityId, true)){ return false;	}
 		$where = $this->where(array('city_id'=>$cityId));
-		$url =  $this->_baseUrl . 'cuisines.'.$this->_returnFormat. $where;
+		$url =  $this->_baseUrl . 'cuisines.'.$this->getDataFormat(). $where;
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);
 	}
 	/**
 	* [getRestaurantsInZone description]
 	* @param  	name		summary													type    required
-				* city_id	city id													int		Required
-				* zone_id	Zone id													int		Required
-				* category	1 for Delivery, 2 for Dineout, 3 for Nightlife. 		int		Optional
-				* 			Skip this to get all results	
-				* start		The starting location within results from which 		int		Optional
-				* 			the results should be fetched. Default is 0	
-				* count		The number of results to fetch. Default is 10, 			int		Optional	
-				* 			max is 50.	
-	* @return [type]             [description]
+	* 			city_id		city id													int		Required
+	* 			zone_id		Zone id													int		Required
+	* 			category	1 for Delivery, 2 for Dineout, 3 for Nightlife. 		int		Optional
+	* 						Skip this to get all results	
+	* 			start		The starting location within results from which 		int		Optional
+	* 						the results should be fetched. Default is 0	
+	* 			count		The number of results to fetch. Default is 10, 			int		Optional	
+	* 						max is 50.	
+	* @return xml/json      xml or json depend on the $this->_dataformat;
 	*/	
 	function getRestaurantsInZone($cityId = '', $zoneId = '', $category = '', $start = 0, $count = 10)
 	{		
@@ -844,7 +878,7 @@ class ZomatoApi
 		if(!$this->validationFields('start', $start, false)){ return false;	}
 		if(!$this->validationFields('count', $count, false)){ return false;	}
 		$where = $this->where(array('city_id'=> $cityId,'zone_id'=>$zoneId, 'category'=> $category, 'start'=> $start, 'count'=> $count));
-		$url =  $this->_baseUrl . 'search.'.$this->_returnFormat.$where;
+		$url =  $this->_baseUrl . 'search.'.$this->getDataFormat().$where;
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);	
 	}
@@ -858,7 +892,7 @@ class ZomatoApi
 	*			start		The starting location within results from which 			int		Optional
 	*						the results should be fetched. Default is 0	
 	*			count		The number of results to fetch. Default is 10, max is 50	int		Optional
-	* @return [type]         [description]
+	* @return xml/json      xml or json depend on the $this->_dataformat;
 	**/
 	function getRestaurantsInLocality($cityId = '', $subzoneId = '', $category = '', $start = 0, $count = 10)
 	{		
@@ -868,7 +902,7 @@ class ZomatoApi
 		if(!$this->validationFields('start', $start, false)){ return false;	}
 		if(!$this->validationFields('count', $count, false)){ return false;	}
 		$where = $this->where(array('city_id'=>$cityId, 'subzone_id'=> $subzoneId ,'category'=> $category, 'start'=> $start, 'count'=> $count));		
-		$url =  $this->_baseUrl . 'search.'.$this->_returnFormat. $where;
+		$url =  $this->_baseUrl . 'search.'.$this->getDataFormat(). $where;
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);	
 	}
@@ -876,12 +910,12 @@ class ZomatoApi
 	* [getRestaurantDetails description]
 	* @param   name 			summary 			type 	required
 	*          restaurantId		restaurant Id		int		Required
-	* @return [type]            [description]
+	*  @return xml/json      xml or json depend on the $this->_dataformat;
 	**/
 	function getRestaurantDetails($restaurantId = '')
 	{
 		if(!$this->validationFields('restaurant id', $restaurantId, true)){  return false;	}			
-		$url =  $this->_baseUrl . 'restaurant.'.$this->_returnFormat.'/'.$restaurantId;
+		$url =  $this->_baseUrl . 'restaurant.'.$this->getDataFormat().'/'.$restaurantId;
 		$retResult = $this->getRequest($url);
 		//echo '$url'.$url;
 		return $this->responseAnalyse($retResult);			
@@ -893,15 +927,15 @@ class ZomatoApi
 	*         	start			The starting location within results from 					int		Optional
 	*         					which the results should be fetched. Default is 0	
 	*	      	count			The number of results to fetch. Default is 10, max is 50	int		Optional
-	 * @return [type]                [description]
-	 */
+	* @return xml/json      xml or json depend on the $this->_dataformat;
+	*/
 	function getReviewsForRestaurant($restaurantId = '', $start = 0, $count = 10)
 	{	
 		if(!$this->validationFields('restaurant id', $restaurantId, true)){ return false;	}
 		if(!$this->validationFields('start', $start, false)){ return false;	}
 		if(!$this->validationFields('count', $count, false)){ return false;	}
 		$where = $this->where(array('start'=>$start, 'count'=> $count));		
-		$url =  $this->_baseUrl . 'reviews.'.$this->_returnFormat.'/'.$restaurantId.'/user'. $where;
+		$url =  $this->_baseUrl . 'reviews.'.$this->getDataFormat().'/'.$restaurantId.'/user'. $where;
 		
 		$retResult = $this->getRequest($url);	
 		return $this->responseAnalyse($retResult);			
@@ -913,7 +947,7 @@ class ZomatoApi
 	*		res_id		User email					int		Required
 	*		data		Error in restaurant data	string	Required
 	*		name		User name					string	Optional
-	* @return [type]                [description]
+	*  @return xml/json      xml or json depend on the $this->_dataformat;
 	**/
 	function postErrorInRestaurantDetails($res_id = '', $changeData = '', $name = '')
 	{
@@ -921,7 +955,7 @@ class ZomatoApi
 		if(!$this->validationFields('data', $changeData, true)){ return false;	}
 		if(!$this->validationFields('name', $name, false)){ return false;	} 		
 			
-		$url =  $this->_baseUrl . 'contact.'.$this->_returnFormat;		
+		$url =  $this->_baseUrl . 'contact.'.$this->getDataFormat();		
 		$retResult = $this->postRequest($url, array('res_id'=> $res_id, 'data'=> $changeData, 'name' => $name));	
 		return $this->responseAnalyse($retResult);	
 	
@@ -951,7 +985,7 @@ class ZomatoApi
 	* 			open			Set 'now' to check if restaurant is open				string	Optional
 	* 			buffet			Set 1 to check if restaurant has a buffet else 0		int		Optional
 	* 			happyhour		Set 1 to check if restaurant has happy hours else 0		int		Optional
-	* @return [type]             [description]
+	*  @return xml/json      xml or json depend on the $this->_dataformat;
 	**/
 	function getRestaurantsByCuisine($cityId = '', $cuisineId = '', $category= '', $start = 0, $count = 10, $mincft = '', $maxcft = '', $minrating = '', $maxrating = '', $cc = 0, $bar = 0, $veg = 0, $open  = '', $buffet = 0, $happyhour = 0)
 	{
@@ -971,7 +1005,7 @@ class ZomatoApi
 		if(!$this->validationFields('start', $start, false)){ return false;	}
 		if(!$this->validationFields('count', $count, false)){ return false;	}
 		$where = $this->where(array('city_id' => $cityId, 'cuisine_id' => $cuisineId, 'category' => $category, 'start' => $start, 'count' => $count, 'mincft' => $mincft,  'maxcft' =>$maxcft, 'minrating' => $minrating,  'maxrating' => $maxrating, 'cc' => $cc, 'bar' => $bar, 'veg' => $veg, 'open'  => $open, 'buffet' => $buffet, 'happyhour' => $happyhour));
-		$url =  $this->_baseUrl . 'search.'.$this->_returnFormat.$where;
+		$url =  $this->_baseUrl . 'search.'.$this->getDataFormat().$where;
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);				
 	}
@@ -1002,7 +1036,7 @@ class ZomatoApi
 	* 			open		Set 'now' to check if restaurant is open			string	Optional
 	* 			buffet		Set 1 to check if restaurant has a buffet else 0	int		Optional
 	* 			happyhour	Set 1 to check if restaurant has happy hours else 0	int		Optional
-	* @return [type]         [description]
+	*  @return xml/json      xml or json depend on the $this->_dataformat;
 	**/
 	function getRandomRestaurantNearLocation($lat = '', $lon = '', $cityId = '', $radius = '', $cuisine_id = '', $category = '', $start = '', $count = '', $mincft = '', $maxcft = '', $minrating = '', $maxrating = '', $cc = '', $bar = '', $veg = '', $open = '', $buffet = '', $happyhour = '')
 	{
@@ -1025,7 +1059,7 @@ class ZomatoApi
 			
 		$where = $this->where(array('random'=>true,'city_id' => $cityId, 'cuisine_id' => $cuisineId, 'category' => $category, 'start' => $start, 'limit' => $limit, 'mincft' => $mincft,  'maxcft' => $maxcft, 'minrating' => $minrating,  'maxrating' => $maxrating, 'cc' => $cc, 'bar' => $bar, 'veg' => $veg, 'open'  => $open, 'buffet' => $buffet, 'happyhour' => $happyhour));
 		
-		$url =  $this->_baseUrl . 'search./'.$this->_returnFormat.'near'.$where; 
+		$url =  $this->_baseUrl . 'search./'.$this->getDataFormat().'near'.$where; 
 		$retResult = $this->getRequest($url);	
 		return $this->responseAnalyse($retResult);		
 	}
@@ -1052,7 +1086,7 @@ class ZomatoApi
 	*   		open		Set 'now' to check if restaurant is open						string	Optional
 	*			buffet		Set 1 to check if restaurant has a buffet else 0				int		Optional
 	*			happyhour	Set 1 to check if restaurant has happy hours else 0				int		Optiona
-	* @return [type]         [description]
+	*@return xml/json      xml or json depend on the $this->_dataformat;
 	*/	
 	function searchRestaurants($cityId = '', $queryText = '', $lat = '', $lon = '', $mincft = '', $maxcft = '', $minrating = '', $maxrating = '', $start = '', $count = '', $cuisines = '',  $cc = '', $bar = '', $veg = '', $open = '', $buffet = '', $happyhour = '' )
 	{
@@ -1077,13 +1111,13 @@ class ZomatoApi
 
 		$where = $this->where(array('q' => $queryText, 'random'=>true,'city_id' => $cityId, 'cuisine_id' => $cuisineId, 'category' => $category, 'start' => $start, 'limit' => $limit, 'mincft' => $mincft,  'maxcft' => $maxcft, 'minrating' => $minrating,  'maxrating' => $maxrating, 'cc' => $cc, 'bar' => $bar, 'veg' => $veg, 'open'  => $open, 'buffet' => $buffet, 'happyhour' => $happyhour));
 
-		$url =  $this->_baseUrl . 'search.'.$this->_returnFormat. $where; 
+		$url =  $this->_baseUrl . 'search.'.$this->getDataFormat(). $where; 
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);	
 	}
 	/**
-	 * [getNearByRestaurants description]
-	 * name 		summary 														type 	required
+	* [getNearByRestaurants description]
+	*  name 		summary 														type 	required
 	*  lat			Latitude of the point near which search is to be made.					Required
 	*  lon			Longitude of the point near which search is to be made.					Required
 	*  start		Offset from the start of results. For e.g. if you require 
@@ -1096,8 +1130,8 @@ class ZomatoApi
 	*  minrating	Filter restaurants with rating less than this value						Optional
 	*  maxrating	Filter restaurants with rating above this value							Optional
 	*  Returned Fields 
-	 * @return [type]      [description]
-	 */
+	*  @return xml/json      xml or json depend on the $this->_dataformat;
+	*/
 	function getNearByRestaurants($lat = '', $lon = '', $start = '', $count = '', $mincft = '', $maxcrf = '', $minrating = '', $maxrating = '')
 	{
 		if(!$this->validationFields('lat', $lat, true) || !$this->validationFields('lon', $lon, true)){	return false; }	
@@ -1110,10 +1144,47 @@ class ZomatoApi
 		
 		
 		$where = $this->where(array('lat' => $lat, 'lon' => $lon, 'start' => $start, 'count' => $count, 'mincft' => $mincft, 'maxcft' => $maxcft, 'minrating' => $minrating, 'maxrating' => $maxrating));
-		$url =  $this->_baseUrl . 'search.'.$this->_returnFormat.'/near'.$where; 
+		$url =  $this->_baseUrl . 'search.'.$this->getDataFormat().'/near'.$where; 
 		$retResult = $this->getRequest($url);
 		return $this->responseAnalyse($retResult);	
 	}
-
+	/**
+	* API-key Setter
+	*
+	* @param string $apiKey
+	* @return void
+	*/
+	public function setApiKey($apiKey) 
+	{
+		$this->_apikey = $apiKey;
+	}	
+	/**
+	* API Key Getter
+	*
+	* @return string
+	*/
+	public function getApiKey() 
+	{
+		return $this->_apikey;
+	}
+	/**
+	*API Data Format Setter
+	*
+	*@param string $format
+	*@return void
+	*/
+	public function setDataFormat($dataformat)
+	{
+		$this->_dataformat = $dataformat;
+	}
+	/**
+	*API Data Format getter
+	*
+	*@return string
+	*/
+	public function getDataFormat()
+	{
+		return $this->_dataformat;
+	}
 }
 

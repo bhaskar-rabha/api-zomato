@@ -1,8 +1,8 @@
 <?php
 
 require_once 'class.zomatoapi.php';
-	//&lon=
-$objZomatoApi = new ZomatoApi('7749b19667964b87a3efc739e254ada2','https://api.zomato.com/v1/','xml');
+
+$objZomatoApi = new ZomatoApi(array('apikey'=>'7749b19667964b87a3efc739e254ada2','dataformat'=>'xml'));
 /**
 	* [getRestaurantsByCuisine description]
 	* @param  
@@ -30,7 +30,7 @@ $objZomatoApi = new ZomatoApi('7749b19667964b87a3efc739e254ada2','https://api.zo
 	* 			happyhour		Set 1 to check if restaurant has happy hours else 0		int		Optional
 	* @return [type]             [description]
 	**/
-$data = $objZomatoApi->getRandomRestaurantNearLocation();
+$data = $objZomatoApi->getRestaurantsByCuisine(1,2);
 if($data)
 {
 	echo '<pre>';
